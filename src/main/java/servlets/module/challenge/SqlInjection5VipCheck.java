@@ -76,12 +76,13 @@ public class SqlInjection5VipCheck extends HttpServlet {
         Connection conn =
             Database.getChallengeConnection(applicationRoot, "SqlInjectionChallenge5ShopVipCoupon");
         log.debug("Looking for VipCoupons Insecurely");
+        // A PreparedStatement only protects the values passed through setString(); built by
+        // concatenation it is just a Statement with a different name
         PreparedStatement prepstmt =
             conn.prepareStatement(
                 "SELECT itemId, perCentOff, itemName FROM vipCoupons JOIN items USING (itemId)"
-                    + " WHERE couponCode = '"
-                    + couponCode
-                    + "';");
+                    + " WHERE couponCode = ?;");
+        prepstmt.setString(1, couponCode);
         ResultSet coupons = prepstmt.executeQuery();
         try {
           if (coupons.next()) {

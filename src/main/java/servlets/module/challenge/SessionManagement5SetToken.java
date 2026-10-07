@@ -46,6 +46,38 @@ import utils.Validate;
  */
 public class SessionManagement5SetToken extends HttpServlet {
 
+  // Issued reset tokens: user -> {token, issue time}. A token is random, bound to the user it
+  // was issued for, valid for ten minutes and usable once. The old scheme accepted the base64 of
+  // any recent timestamp, which anyone can produce without receiving anything.
+  private static final java.util.Map<String, Object[]> TOKENS =
+      new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
+  private static final long TOKEN_LIFETIME_MS = 10 * 60 * 1000L;
+
+  static String issueToken(String userName) {
+    byte[] bytes = new byte[24];
+    RANDOM.nextBytes(bytes);
+    String token = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    TOKENS.put(userName, new Object[] {token, System.currentTimeMillis()});
+    return token;
+  }
+
+  /** True only for the unexpired token last issued to this user; the token is consumed. */
+  static boolean consumeToken(String userName, String token) {
+    if (userName == null || token == null) {
+      return false;
+    }
+    Object[] issued = TOKENS.get(userName);
+    if (issued == null
+        || System.currentTimeMillis() - (Long) issued[1] > TOKEN_LIFETIME_MS
+        || !java.security.MessageDigest.isEqual(
+            ((String) issued[0]).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+            token.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+      return false;
+    }
+    return TOKENS.remove(userName, issued);
+  }
+
   private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(SessionManagement5SetToken.class);
   private static String levelName = "SessionManagement5SetToken";
@@ -110,6 +142,8 @@ public class SessionManagement5SetToken extends HttpServlet {
         // Is the username valid?
         if (resultSet.next()) {
           log.debug("User found");
+          // A real token is issued and, as the message says, sent to the user - never shown here
+          issueToken(resultSet.getString(1));
           htmlOutput =
               bundle.getString("setToken.sentTo.1")
                   + " '"

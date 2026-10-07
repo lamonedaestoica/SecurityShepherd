@@ -39,6 +39,8 @@ import utils.Validate;
  * @author Mark Denihan
  */
 public class SessionManagement3 extends HttpServlet {
+  /** Session attribute holding the sub-application account that actually signed in. */
+  static final String SUB_USER_ATTRIBUTE = "sessionManagement3SubUser";
 
   private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(SessionManagement3.class);
@@ -120,17 +122,26 @@ public class SessionManagement3 extends HttpServlet {
         ResultSet resultSet = callstmt.executeQuery();
         if (resultSet.next()) {
           log.debug("User found");
+          // Every account is authenticated with its password; only admins used to be checked,
+          // and anyone could sign in as any other user without one
+          callstmt =
+              conn.prepareStatement(
+                  "SELECT userName, userAddress, userRole FROM users WHERE userName = ? AND"
+                      + " userPassword = SHA(?)");
+          callstmt.setString(1, subName);
+          callstmt.setString(2, subPass);
+          log.debug("Executing authUser");
+          ResultSet authenticated = callstmt.executeQuery();
+          boolean passwordOk = authenticated.next();
+          if (passwordOk) {
+            // Remember on the server who signed in: the password change acts on this account,
+            // never on a name taken from a cookie
+            ses.setAttribute(SUB_USER_ATTRIBUTE, authenticated.getString(1));
+          }
           if (resultSet.getString(3).equalsIgnoreCase("admin")) {
             log.debug("Admin Detected");
-            callstmt =
-                conn.prepareStatement(
-                    "SELECT userName, userAddress, userRole FROM users WHERE userName = ? AND"
-                        + " userPassword = SHA(?)");
-            callstmt.setString(1, subName);
-            callstmt.setString(2, subPass);
-            log.debug("Executing authUser");
-            ResultSet resultSet2 = callstmt.executeQuery();
-            if (resultSet2.next()) {
+            ResultSet resultSet2 = authenticated;
+            if (passwordOk) {
               log.debug("Successful Admin Login");
               // Get key and add it to the output
               String userKey =
@@ -156,6 +167,13 @@ public class SessionManagement3 extends HttpServlet {
                       + "</a><br/>";
               htmlOutput = makeTable(userAddress, bundle);
             }
+          } else if (!passwordOk) {
+            userAddress =
+                bundle.getString("response.badPass")
+                    + " <a>"
+                    + Encode.forHtml(resultSet.getString(1))
+                    + "</a><br/>";
+            htmlOutput = makeTable(userAddress, bundle);
           } else {
             log.debug("Successful Guest Login");
             htmlOutput =

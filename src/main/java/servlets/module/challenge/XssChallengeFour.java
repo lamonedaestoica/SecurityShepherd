@@ -13,11 +13,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.owasp.encoder.Encode;
 import utils.FindXSS;
 import utils.Hash;
 import utils.ShepherdLogManager;
 import utils.Validate;
-import utils.XssFilter;
 
 /**
  * Cross Site Scripting Challenge Four control class. <br>
@@ -79,36 +79,34 @@ public class XssChallengeFour extends HttpServlet {
           String userPost = new String();
           String searchTerm = request.getParameter("searchTerm");
           log.debug("User Submitted - " + searchTerm);
-          if (!searchTerm.startsWith("http")) {
-            searchTerm = "https://www.owasp.org/index.php/OWASP_Security_Shepherd";
-            userPost =
-                "<a href=\""
-                    + searchTerm
-                    + "\" alt=\"OWASP Security Shepherd\">"
-                    + searchTerm
+          // Only a well-formed http(s) URL is used, and it is encoded for the attribute and the
+          // text it lands in. Checking startsWith("http") and HTML-encoding a few characters let a
+          // quote break out of the href and add a javascript: one.
+          searchTerm = SafeLink.of(searchTerm);
+          userPost =
+              "<a href=\""
+                  + Encode.forHtmlAttribute(searchTerm)
+                  + "\" alt=\""
+                  + Encode.forHtmlAttribute(searchTerm)
+                  + "\">"
+                  + Encode.forHtml(searchTerm)
+                  + "</a>";
+          log.debug("After Encoding - " + searchTerm);
+          if (FindXSS.search(userPost)) {
+            htmlOutput =
+                "<h2 class='title'>"
+                    + bundle.getString("result.wellDone")
+                    + "</h2>"
+                    + "<p>"
+                    + bundle.getString("result.youDidIt")
+                    + "<br />"
+                    + bundle.getString("result.resultKey")
+                    + " <a>"
+                    + Hash.generateUserSolution(
+                        Getter.getModuleResultFromHash(
+                            getServletContext().getRealPath(""), levelHash),
+                        (String) ses.getAttribute("userName"))
                     + "</a>";
-          } else {
-
-            searchTerm = XssFilter.encodeForHtml(searchTerm);
-            userPost =
-                "<a href=\"" + searchTerm + "\" alt=\"" + searchTerm + "\">" + searchTerm + "</a>";
-            log.debug("After Encoding - " + searchTerm);
-            if (FindXSS.search(userPost)) {
-              htmlOutput =
-                  "<h2 class='title'>"
-                      + bundle.getString("result.wellDone")
-                      + "</h2>"
-                      + "<p>"
-                      + bundle.getString("result.youDidIt")
-                      + "<br />"
-                      + bundle.getString("result.resultKey")
-                      + " <a>"
-                      + Hash.generateUserSolution(
-                          Getter.getModuleResultFromHash(
-                              getServletContext().getRealPath(""), levelHash),
-                          (String) ses.getAttribute("userName"))
-                      + "</a>";
-            }
           }
           log.debug("Adding searchTerm to Html: " + searchTerm);
           htmlOutput +=

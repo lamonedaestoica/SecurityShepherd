@@ -73,7 +73,16 @@ public class DirectObjectBankTransfer extends HttpServlet {
       String errorMessage = new String();
       String applicationRoot = getServletContext().getRealPath("");
       try {
-        String senderAccountNumber = request.getParameter("senderAccountNumber");
+        // Money can only leave the account that is signed in. The sender used to be taken from
+        // the request, so naming any account number - account 1, say - spent someone else's money.
+        Object signedInAccount = ses.getAttribute("directObjectBankAccount");
+        String senderAccountNumber =
+            signedInAccount != null
+                    && signedInAccount
+                        .toString()
+                        .equals(request.getParameter("senderAccountNumber"))
+                ? signedInAccount.toString()
+                : "";
         log.debug("Sender Account Number - " + senderAccountNumber);
         String receiverAccountNumber = request.getParameter("receiverAccountNumber");
         log.debug("Receiver Account Number - " + receiverAccountNumber);

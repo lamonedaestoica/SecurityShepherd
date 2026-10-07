@@ -70,7 +70,12 @@ public class UrlAccess2Admin extends HttpServlet {
 
       try {
         String userData = request.getParameter("adminData");
-        boolean tamperedRequest = !userData.equalsIgnoreCase("youAreAnAdminOfAwesomenessWoopWoop");
+        // Hiding this admin function's URL in the page's JavaScript, behind a fixed parameter
+        // value, is not authorisation: anyone who reads the script can call it. The caller must
+        // hold the sub-application's admin role on the server, which nothing grants a player.
+        boolean tamperedRequest =
+            !userData.equalsIgnoreCase("youAreAnAdminOfAwesomenessWoopWoop")
+                || !"granted".equals(ses.getAttribute("urlAccess2Admin"));
         if (!tamperedRequest) {
           log.debug("No request tampering detected");
         } else {

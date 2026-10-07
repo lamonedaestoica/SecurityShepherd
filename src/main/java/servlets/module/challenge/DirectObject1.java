@@ -74,6 +74,13 @@ public class DirectObject1 extends HttpServlet {
       out.print(getServletInfo());
       try {
         String userId = request.getParameter("userId[]");
+        // Access control on the server: only the profiles in the public directory this page
+        // lists can be read. The id is a reference the client chooses; the ids it offers are 1, 3,
+        // 5, 7 and 9, and the rest - the admin's 11 among them -
+        // were one edited number away.
+        if (!java.util.Arrays.asList("1", "3", "5", "7", "9").contains(userId)) {
+          userId = "";
+        }
         log.debug("User Submitted - " + userId);
         String ApplicationRoot = getServletContext().getRealPath("");
         log.debug("Servlet root = " + ApplicationRoot);

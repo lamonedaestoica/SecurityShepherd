@@ -63,7 +63,12 @@ public class CsrfChallengeTargetTwo extends HttpServlet {
     try {
       boolean result = false;
       HttpSession ses = request.getSession(true);
-      if (Validate.validateSession(ses)) {
+      // A request that changes another user's state has to show it comes from this
+      // application: Origin (or Referer) must name this host. A forged request - a link or an
+      // auto-submitting form on another site - carries a foreign origin or none at all.
+      if (Validate.validateSession(ses) && !SameOrigin.check(request)) {
+        out.write(csrfGenerics.getString("target.incrementFailed"));
+      } else if (Validate.validateSession(ses)) {
         ShepherdLogManager.setRequestIp(
             request.getRemoteAddr(),
             request.getHeader("X-Forwarded-For"),

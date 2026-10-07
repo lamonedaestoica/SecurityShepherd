@@ -13,11 +13,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.owasp.encoder.Encode;
 import utils.FindXSS;
 import utils.Hash;
 import utils.ShepherdLogManager;
 import utils.Validate;
-import utils.XssFilter;
 
 /**
  * Cross Site Scripting Challenge Two <br>
@@ -78,7 +78,10 @@ public class XssChallengeTwo extends HttpServlet {
         if (Validate.validateTokens(tokenCookie, tokenParmeter)) {
           String searchTerm = request.getParameter("searchTerm");
           log.debug("User Submitted - " + searchTerm);
-          searchTerm = XssFilter.levelTwo(searchTerm);
+          // Encoded for HTML instead of filtered: a blacklist of tags and handlers can always be
+          // worked around, encoding cannot. The XSS check below therefore sees what really
+          // reaches the page.
+          searchTerm = Encode.forHtml(searchTerm);
           log.debug("After Filtering - " + searchTerm);
           String htmlOutput = new String();
           if (FindXSS.search(searchTerm)) {

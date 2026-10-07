@@ -74,6 +74,19 @@ public class DirectObject2 extends HttpServlet {
       out.print(getServletInfo());
       try {
         String userId = request.getParameter("userId[]");
+        // Access control on the server: only the profiles in the public directory this page
+        // lists can be read. The id is a reference the client chooses; hashing the id (md5 of a
+        // small integer) does not make it secret, so the hidden ones
+        // were one md5 away.
+        if (!java.util.Arrays.asList(
+                "c81e728d9d4c2f636f067f89cc14862c",
+                "eccbc87e4b5ce2fe28308fd9f2a7baf3",
+                "e4da3b7fbbce2345d7772b0674a318d5",
+                "8f14e45fceea167a5a36dedd4bea2543",
+                "6512bd43d9caa6e02c990b0a82652dca")
+            .contains(userId)) {
+          userId = "";
+        }
         log.debug("User Submitted - " + userId);
         String ApplicationRoot = getServletContext().getRealPath("");
         log.debug("Servlet root = " + ApplicationRoot);

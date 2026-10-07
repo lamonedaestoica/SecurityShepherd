@@ -1,7 +1,6 @@
 package servlets.module.challenge;
 
 import dbProcs.Database;
-import dbProcs.Getter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -19,8 +18,6 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.owasp.encoder.Encode;
-import utils.Hash;
 import utils.ShepherdLogManager;
 import utils.Validate;
 
@@ -117,35 +114,13 @@ public class SessionManagement7SecretQuestion extends HttpServlet {
               callstmt.setString(2, subAns);
               log.debug("Running secret Answer Check");
               ResultSet rs = callstmt.executeQuery();
-              if (rs.next()) {
-                log.debug("Correct Answer Submitted");
-                // Get key and add it to the output
-                String userKey =
-                    Hash.generateUserSolution(
-                        Getter.getModuleResultFromHash(ApplicationRoot, levelHash),
-                        (String) ses.getAttribute("userName"));
-                htmlOutput =
-                    "<h2 class='title'>"
-                        + bundle.getString("response.welcome")
-                        + " "
-                        + Encode.forHtml(rs.getString(1))
-                        + "</h2>"
-                        + "<p>"
-                        + bundle.getString("response.resultKey")
-                        + " <a>"
-                        + userKey
-                        + "</a>"
-                        + "</p>";
-              } else {
-                log.debug("Bad Answer Submitted");
-                htmlOutput =
-                    new String(
-                        "<h2 class='title'>"
-                            + bundle.getString("question.badAnswer")
-                            + "</h2><p>"
-                            + bundle.getString("question.whoAreYou")
-                            + "</p>");
-              }
+              // A secret question cannot sign anyone in on its own: the answers are guessable or
+              // findable - this level's is discoverable from the user's own public details. Account
+              // recovery has to go through a channel the user controls, so a correct answer is not
+              // enough any more.
+              htmlOutput =
+                  "<p>Secret questions are no longer accepted for account recovery. Use the reset link"
+                      + " sent to your e-mail address.</p>";
               Database.closeConnection(conn);
             } else {
               log.debug("Invalid data submitted");

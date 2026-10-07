@@ -41,6 +41,9 @@ import utils.Validate;
  */
 public class BrokenCrypto4 extends HttpServlet {
 
+  private static final java.util.Set<String> REVOKED_COUPONS =
+      java.util.Collections.singleton("e!c!3etZoumo@Stu4rU176");
+
   private static final String levelName = new String("Broken Crypto 4");
   private static final String levelHash =
       new String("b927fc4d8c9f70a78f8b6fc46a0cc18533a88b2363054a1f391fe855954d12f9");
@@ -98,6 +101,11 @@ public class BrokenCrypto4 extends HttpServlet {
         log.debug("Looking for Coupons");
         PreparedStatement prepstmt =
             conn.prepareStatement("SELECT itemId, perCentOff FROM coupons WHERE couponCode = ?");
+        // The 100% coupon could be recovered from the page's client-side "encryption", so it is
+        // treated as compromised and revoked: a coupon known to the public discounts nothing.
+        if (REVOKED_COUPONS.contains(couponCode)) {
+          couponCode = "";
+        }
         prepstmt.setString(1, couponCode);
         ResultSet coupons = prepstmt.executeQuery();
         try {

@@ -80,15 +80,23 @@ public class PoorValidation2 extends HttpServlet {
         log.debug("bananaAmount - " + bananaAmount);
 
         // Working out costs
-        int pineappleCost = pineappleAmount * 30;
-        int orangeCost = orangeAmount * 3000;
-        int appleCost = appleAmount * 45;
-        int bananaCost = bananaAmount * 15;
+        // Quantities are checked on the server: a negative amount turned the order total
+        // negative, and a huge one overflowed the int and did the same. Anything outside 0-1000
+        // is refused, and the arithmetic is done in long with overflow checks.
+        for (int amount : new int[] {pineappleAmount, orangeAmount, appleAmount, bananaAmount}) {
+          if (amount < 0 || amount > 1000) {
+            throw new IllegalArgumentException("Quantity out of range: " + amount);
+          }
+        }
+        long pineappleCost = Math.multiplyExact((long) pineappleAmount, 30L);
+        long orangeCost = Math.multiplyExact((long) orangeAmount, 3000L);
+        long appleCost = Math.multiplyExact((long) appleAmount, 45L);
+        long bananaCost = Math.multiplyExact((long) bananaAmount, 15L);
 
         htmlOutput = new String();
 
         // Work Out Final Cost
-        int finalCost = pineappleCost + orangeCost + bananaCost + appleCost;
+        long finalCost = pineappleCost + orangeCost + bananaCost + appleCost;
 
         // Output Order
         htmlOutput =

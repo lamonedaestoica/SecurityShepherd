@@ -71,6 +71,9 @@ String i18nLevelName = bundle.getString("securityMisconfig.stealTokens.challenge
 		try
 		{
 			Cookie userCookie = new Cookie("securityMisconfigLesson", SecurityMisconfigStealTokens.getUserToken(userId, applicationRoot));
+			// HttpOnly keeps the token away from page scripts; Secure keeps it off plain HTTP
+			userCookie.setHttpOnly(true);
+			userCookie.setSecure(true);
 	        response.addCookie(userCookie);
 		}
 		catch(Exception e)

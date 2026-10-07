@@ -110,7 +110,9 @@ public class SecurityMisconfigStealTokens extends HttpServlet {
                       + "<p>");
         } else {
           // User submitted something different from their cookie
-          boolean notUsersTokenButValid = validToken(userId, cookieValue, applicationRoot);
+          // A session token is only ever valid for the user it was issued to. Accepting a
+          // different user's valid token is precisely what makes a stolen token useful.
+          boolean notUsersTokenButValid = false;
           if (notUsersTokenButValid) {
             log.debug("Valid Cookie of another User Dectected");
             // Get key and add it to the output

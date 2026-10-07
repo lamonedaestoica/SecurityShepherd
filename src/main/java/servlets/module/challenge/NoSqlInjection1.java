@@ -113,7 +113,9 @@ public class NoSqlInjection1 extends HttpServlet {
         String gamerId = request.getParameter("theGamerName");
         log.debug("User Submitted: " + gamerId);
 
-        DBObject whereQuery = new BasicDBObject("$where", "this._id == '" + gamerId + "'");
+        // A plain equality on _id. The value used to be spliced into a $where clause, which
+        // MongoDB evaluates as JavaScript - so "' || '1'=='1" matched every gamer.
+        DBObject whereQuery = new BasicDBObject("_id", gamerId);
         cursor = dbCollection.find(whereQuery);
 
         try {

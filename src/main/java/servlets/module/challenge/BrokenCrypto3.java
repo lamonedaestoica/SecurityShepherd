@@ -36,6 +36,27 @@ import utils.Validate;
  */
 public class BrokenCrypto3 extends HttpServlet {
 
+  private static final byte[] SEAL_KEY = new java.security.SecureRandom().generateSeed(32);
+
+  /** Opens an AES-GCM message (base64 of IV || ciphertext+tag); null if it does not verify. */
+  static String open(String sealed) {
+    try {
+      byte[] raw = java.util.Base64.getDecoder().decode(sealed.trim());
+      if (raw.length < 12 + 16) {
+        return null;
+      }
+      javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
+      cipher.init(
+          javax.crypto.Cipher.DECRYPT_MODE,
+          new javax.crypto.spec.SecretKeySpec(SEAL_KEY, "AES"),
+          new javax.crypto.spec.GCMParameterSpec(128, raw, 0, 12));
+      byte[] plain = cipher.doFinal(raw, 12, raw.length - 12);
+      return new String(plain, java.nio.charset.StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(BrokenCrypto3.class);
   private static String levelName = "Broken Crypto Challenge 3";
@@ -73,7 +94,14 @@ public class BrokenCrypto3 extends HttpServlet {
 
         log.debug("Decrypting user input");
         // Using level key as encryption key
-        String decryptedUserData = decrypt(userData, levelResult);
+        // The level's own result used to be the key of a repeating XOR, and this endpoint would
+        // decrypt anything sent to it - so known plaintext gave the key back a byte at a time.
+        // Messages are now sealed with AES-GCM under a key that never leaves the server; a
+        // forged or edited ciphertext simply fails to open.
+        String decryptedUserData = open(userData);
+        if (decryptedUserData == null) {
+          decryptedUserData = "";
+        }
         log.debug("Decrypted to: " + decryptedUserData);
 
         htmlOutput =

@@ -44,6 +44,7 @@ public class SessionManagement2ChangePassword extends HttpServlet {
   private static String levelName = "Session Management Challenge Two (Change Pass)";
   public static String levelHash =
       "f5ddc0ed2d30e597ebacf5fdd117083674b19bb92ffc3499121b9e6a12c92959";
+
   /** What the response says instead of the new password. Literal, not a credential. */
   private static final String PASSWORD_NOT_DISCLOSED =
       "a new unpredictable value. The password itself is not shown in this response.";

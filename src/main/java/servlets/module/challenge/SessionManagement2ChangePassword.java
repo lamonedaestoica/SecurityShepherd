@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.owasp.encoder.Encode;
 import utils.Hash;
 import utils.ShepherdLogManager;
 import utils.Validate;
@@ -45,12 +44,15 @@ public class SessionManagement2ChangePassword extends HttpServlet {
   private static String levelName = "Session Management Challenge Two (Change Pass)";
   public static String levelHash =
       "f5ddc0ed2d30e597ebacf5fdd117083674b19bb92ffc3499121b9e6a12c92959";
+  /** What the response says instead of the new password. Literal, not a credential. */
+  private static final String PASSWORD_NOT_DISCLOSED =
+      "a new unpredictable value. The password itself is not shown in this response.";
 
   /**
-   * A user with the submitted email address is set a new random password, the password is also
-   * returned from the database procedure and is forwards through to the HTTP response. This
-   * response is not consumed by the client interface by default, and the user will have to discover
-   * it.
+   * A user with the submitted email address is set a new random password. That password is a
+   * credential for somebody else's account -- whoever calls this endpoint has not proven the
+   * address belongs to them -- so it is never written to the response. The response only
+   * acknowledges that the password was replaced with an unpredictable value.
    *
    * @param subEmail Sub schema user email address
    */
@@ -108,7 +110,7 @@ public class SessionManagement2ChangePassword extends HttpServlet {
           callstmt.execute();
           log.debug("Changes committed.");
 
-          htmlOutput = Encode.forHtml(newPassword);
+          htmlOutput = PASSWORD_NOT_DISCLOSED;
           Database.closeConnection(conn);
         } catch (SQLException e) {
           log.error(levelName + " SQL Error: " + e.toString());
